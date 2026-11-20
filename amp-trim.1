@@ -1,0 +1,166 @@
+.TH AMP-TRIM 1 "November 2026" "animated-pager" "User Commands"
+.SH NAME
+amp-trim \- clean and bound a script(1) typescript for an animated man-page box
+.SH SYNOPSIS
+.B amp-trim
+.BR \-t " timing"
+.BR \-s " typescript"
+.RI [ options ]
+.P
+.B amp-trim
+.BR \-t " timing"
+.BR \-s " typescript"
+.BR \-W " width"
+.BR \-H " height"
+.RB [ \-S " shift]"
+.BR \-T " out-timing"
+.BR \-O " out-typescript"
+.RB [ \-v ]
+.SH DESCRIPTION
+.B amp-trim
+reads a timing file and the corresponding typescript produced by
+.BR script (1)
+and prepares them for use inside a fixed-size animation region
+(for example the box managed by
+.BR animated_pager ).
+.P
+Two modes of operation are supported:
+.TP
+.B Detection mode
+When
+.B \-\-width
+and
+.B \-\-height
+are both omitted the tool only measures the content.
+It strips the same dangerous control sequences that would be removed in
+trim mode, then prints the minimal bounding box (width and height) that
+would contain every remaining character.
+The two numbers are written to standard output (so they can be captured by
+a script) and a human-readable summary is written to standard error.
+No output files are required.
+.TP
+.B Trim mode
+When both
+.B \-\-width
+and
+.B \-\-height
+are supplied the tool produces a new timing/typescript pair whose visible
+content is constrained to that rectangle.
+.SS Cleaning
+The following sequences are removed because they would fight the
+surrounding pager:
+.IP \(bu 2
+CSI sequences that clear the screen or home the cursor
+.RI ( J ", " H ", " K ", mode setters, \.\.\.)
+.IP \(bu 2
+ESC c / ESC C (full reset)
+.IP \(bu 2
+Relative cursor-movement sequences that could leave the box
+.IP \(bu 2
+Form-feed characters
+.P
+Colour / SGR sequences
+.RI ( \e033[ \.\.\. m )
+are preserved so that caca-style and other coloured frames continue to work.
+.SS Horizontal handling
+.IP \(bu 2
+.B Shift
+.RB ( \-S / \-\-shift N )
+discards the first
+.I N
+columns of every line.
+Timing that belonged to those characters is retained.
+.IP \(bu 2
+.B Width
+truncates each line to the requested number of columns.
+Again the timing of the discarded characters is kept.
+.SS Vertical handling
+A sliding window of the last
+.I height
+lines is maintained.
+When a new line would exceed the window the oldest line is dropped and the
+remaining lines move up – exactly the behaviour of a terminal whose height
+is equal to the requested value.
+.SH OPTIONS
+.TP
+.BR \-t ", " \-\-timing " " \fIfile\fR
+Input timing file (required).
+.TP
+.BR \-s ", " \-\-typescript " " \fIfile\fR
+Input typescript file (required).
+.TP
+.BR \-W ", " \-\-width " " \fIn\fR
+Target width in columns.
+Must be supplied together with
+.B \-\-height
+(or both must be omitted for detection mode).
+.TP
+.BR \-H ", " \-\-height " " \fIn\fR
+Target height in rows.
+Must be supplied together with
+.B \-\-width
+(or both must be omitted for detection mode).
+.TP
+.BR \-S ", " \-\-shift " " \fIn\fR
+Shift the visible window to the right by
+.I n
+columns (default 0).
+Timing for the skipped columns is retained.
+.TP
+.BR \-T ", " \-\-out\-timing " " \fIfile\fR
+Output timing file.
+Required in trim mode; ignored in detection mode.
+.TP
+.BR \-O ", " \-\-out\-typescript " " \fIfile\fR
+Output typescript file.
+Required in trim mode; ignored in detection mode.
+.TP
+.BR \-v ", " \-\-verbose
+Print a detailed report of every class of character or escape sequence that
+was removed, shifted or truncated.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+No usable events could be parsed from the input files.
+.TP
+.B 2
+Usage error or a required input file is missing / unreadable.
+.SH EXAMPLES
+.SS Detect the natural size of a recording
+.EX
+amp-trim -t session.tm -s session.ts
+.EE
+.P
+Typical output on stdout:
+.EX
+72 24
+.EE
+.SS Trim to a 40×8 box, discarding the first two columns
+.EX
+amp-trim -t session.tm -s session.ts \\
+         -W 40 -H 8 -S 2 \\
+         -T box.tm -O box.ts
+.EE
+.SS Obtain statistics about what was removed
+.EX
+amp-trim -t session.tm -s session.ts -W 40 -H 8 \\
+         -T box.tm -O box.ts --verbose
+.EE
+.SH NOTES
+For best visual results record the original typescript in a terminal whose
+size is close to the final animation box, or run the recording through
+.B amp-trim
+before feeding it to the pager.
+.P
+Because timing of truncated or shifted characters is deliberately retained,
+the overall duration of the replay stays the same even when many characters
+are discarded.
+.SH SEE ALSO
+.BR script (1),
+.BR scriptreplay (1),
+.BR animated_pager (1)
+.SH AUTHOR
+Animated-pager demo

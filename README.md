@@ -38,7 +38,7 @@ amp-trim -t demo.t -s demo.y -W 40 -H 8 -R 2 -T out.t -S out.y
 Replay the result:
 
 ```bash
-scriptreplay -t out.t out.y
+scriptreplay -T out.t out.y
 ```
 
 ## Modes
